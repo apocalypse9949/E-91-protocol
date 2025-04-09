@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QRKD + E91 Simulation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #58a6ff;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    canvas {
+      border: 1px solid #444;
+      background-color: #161b22;
+    }
+    label, select, input {
+      color: #c9d1d9;
+      background: #21262d;
+      border: 1px solid #30363d;
+      padding: 5px;
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Quantum Resonance + E91 Protocol Simulation</h1>
+  
+  <div class="section">
+    <h2>Photon Transmission with QRKD Enhancement</h2>
+    <canvas id="simCanvas" width="600" height="300"></canvas>
+    <br>
+    <button onclick="runSimulation()">Run Simulation</button>
+    <label>
+      Noise Level:
+      <input type="range" id="noise" min="0" max="1" step="0.01" value="0.2">
+    </label>
+    <label>
+      Distance (km):
+      <input type="number" id="distance" value="20" min="0" max="100">
+    </label>
+  </div>
+
+  <div class="section">
+    <h2>Metrics</h2>
+    <p id="metrics">Waiting for simulation...</p>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function drawPhoton(x, y, color = 'aqua') {
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, 2 * Math.PI);
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+
+    function clearCanvas() {
+      ctx.fillStyle = '#161b22';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function simulatePhoton(noise, distance) {
+      // Simulate quantum transmission with QRKD layer
+      let fidelity = 1 - (Math.random() * noise * distance / 100);
+      fidelity = Math.max(0, Math.min(1, fidelity));
+      const survived = fidelity > 0.5;
+      return { fidelity, survived };
+    }
+
+    function runSimulation() {
+      const noise = parseFloat(document.getElementById('noise').value);
+      const distance = parseFloat(document.getElementById('distance').value);
+
+      clearCanvas();
+      let results = [];
+
+      for (let i = 0; i < 10; i++) {
+        let x = 50 + i * 50;
+        let y = canvas.height / 2;
+        const result = simulatePhoton(noise, distance);
+        drawPhoton(x, y, result.survived ? 'lime' : 'red');
+        results.push(result);
+      }
+
+      const survivedCount = results.filter(r => r.survived).length;
+      const avgFidelity = results.reduce((sum, r) => sum + r.fidelity, 0) / results.length;
+
+      document.getElementById('metrics').innerText =
+        `Survived Photons: ${survivedCount}/10\nAverage Fidelity: ${avgFidelity.toFixed(2)}`;
+    }
+  </script>
+</body>
+</html>

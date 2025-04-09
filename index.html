@@ -2,103 +2,96 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QRKD + E91 Simulation</title>
+  <title>QRKD Simulation</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0d1117;
-      color: #c9d1d9;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      color: #58a6ff;
-    }
-    .section {
-      margin-bottom: 30px;
-    }
-    canvas {
-      border: 1px solid #444;
-      background-color: #161b22;
-    }
-    label, select, input {
-      color: #c9d1d9;
-      background: #21262d;
-      border: 1px solid #30363d;
-      padding: 5px;
-      margin: 5px;
-    }
+    body { font-family: Arial; background: #121212; color: white; text-align: center; }
+    canvas { border: 1px solid white; background: #1e1e1e; margin-top: 20px; }
+    #controls { margin-top: 20px; }
+    label, input, output { margin: 0 10px; }
   </style>
 </head>
 <body>
-  <h1>Quantum Resonance + E91 Protocol Simulation</h1>
-  
-  <div class="section">
-    <h2>Photon Transmission with QRKD Enhancement</h2>
-    <canvas id="simCanvas" width="600" height="300"></canvas>
-    <br>
-    <button onclick="runSimulation()">Run Simulation</button>
-    <label>
-      Noise Level:
-      <input type="range" id="noise" min="0" max="1" step="0.01" value="0.2">
-    </label>
-    <label>
-      Distance (km):
-      <input type="number" id="distance" value="20" min="0" max="100">
-    </label>
+  <h1>Quantum Resonance Key Distribution (QRKD) Simulation</h1>
+
+  <div id="controls">
+    <label>Resonance Frequency (GHz): <input type="range" id="resonance" min="1" max="100" value="50" step="1" oninput="updateSimulation()"> <output id="resonanceVal">50</output></label>
+    <label>Environmental Noise (%): <input type="range" id="noise" min="0" max="50" value="10" step="1" oninput="updateSimulation()"> <output id="noiseVal">10</output></label>
+    <label>Photon Count: <input type="number" id="photonCount" value="1000" min="100" step="100" onchange="updateSimulation()"></label>
   </div>
 
-  <div class="section">
-    <h2>Metrics</h2>
-    <p id="metrics">Waiting for simulation...</p>
+  <canvas id="qrkdCanvas" width="800" height="400"></canvas>
+
+  <div id="results">
+    <p>Photon Survival Rate: <span id="survivalRate">--</span>%</p>
+    <p>Quantum Bit Error Rate (QBER): <span id="qber">--</span>%</p>
+    <p>Fidelity: <span id="fidelity">--</span></p>
   </div>
 
   <script>
-    const canvas = document.getElementById('simCanvas');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.getElementById("qrkdCanvas");
+    const ctx = canvas.getContext("2d");
 
-    function drawPhoton(x, y, color = 'aqua') {
-      ctx.beginPath();
-      ctx.arc(x, y, 8, 0, 2 * Math.PI);
-      ctx.fillStyle = color;
-      ctx.fill();
+    const resonanceSlider = document.getElementById("resonance");
+    const noiseSlider = document.getElementById("noise");
+    const photonInput = document.getElementById("photonCount");
+
+    const resonanceVal = document.getElementById("resonanceVal");
+    const noiseVal = document.getElementById("noiseVal");
+
+    const survivalRateSpan = document.getElementById("survivalRate");
+    const qberSpan = document.getElementById("qber");
+    const fidelitySpan = document.getElementById("fidelity");
+
+    function calculateQRKD(resonance, noise, photonCount) {
+      const idealResonance = 50;
+      const detuning = Math.abs(resonance - idealResonance);
+      const resonanceFactor = Math.exp(-Math.pow(detuning / 20, 2));
+
+      const noiseFactor = 1 - noise / 100;
+      const survivalProbability = resonanceFactor * noiseFactor;
+      const survivedPhotons = Math.floor(survivalProbability * photonCount);
+
+      const qber = (1 - resonanceFactor) * 100 * (noise / 50);
+      const fidelity = resonanceFactor * noiseFactor;
+
+      return {
+        survivedPhotons,
+        qber: qber.toFixed(2),
+        survivalRate: ((survivedPhotons / photonCount) * 100).toFixed(2),
+        fidelity: fidelity.toFixed(3)
+      };
     }
 
-    function clearCanvas() {
-      ctx.fillStyle = '#161b22';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-
-    function simulatePhoton(noise, distance) {
-      // Simulate quantum transmission with QRKD layer
-      let fidelity = 1 - (Math.random() * noise * distance / 100);
-      fidelity = Math.max(0, Math.min(1, fidelity));
-      const survived = fidelity > 0.5;
-      return { fidelity, survived };
-    }
-
-    function runSimulation() {
-      const noise = parseFloat(document.getElementById('noise').value);
-      const distance = parseFloat(document.getElementById('distance').value);
-
-      clearCanvas();
-      let results = [];
-
-      for (let i = 0; i < 10; i++) {
-        let x = 50 + i * 50;
-        let y = canvas.height / 2;
-        const result = simulatePhoton(noise, distance);
-        drawPhoton(x, y, result.survived ? 'lime' : 'red');
-        results.push(result);
+    function drawPhotons(survived, total) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const cols = 50;
+      const size = 8;
+      for (let i = 0; i < total; i++) {
+        const x = (i % cols) * (size + 2) + 10;
+        const y = Math.floor(i / cols) * (size + 2) + 10;
+        ctx.fillStyle = i < survived ? '#00FF99' : '#FF4444';
+        ctx.fillRect(x, y, size, size);
       }
-
-      const survivedCount = results.filter(r => r.survived).length;
-      const avgFidelity = results.reduce((sum, r) => sum + r.fidelity, 0) / results.length;
-
-      document.getElementById('metrics').innerText =
-        `Survived Photons: ${survivedCount}/10\nAverage Fidelity: ${avgFidelity.toFixed(2)}`;
     }
+
+    function updateSimulation() {
+      const resonance = parseInt(resonanceSlider.value);
+      const noise = parseInt(noiseSlider.value);
+      const photonCount = parseInt(photonInput.value);
+
+      resonanceVal.textContent = resonance;
+      noiseVal.textContent = noise;
+
+      const result = calculateQRKD(resonance, noise, photonCount);
+
+      survivalRateSpan.textContent = result.survivalRate;
+      qberSpan.textContent = result.qber;
+      fidelitySpan.textContent = result.fidelity;
+
+      drawPhotons(result.survivedPhotons, photonCount);
+    }
+
+    updateSimulation();
   </script>
 </body>
 </html>
